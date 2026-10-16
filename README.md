@@ -138,7 +138,9 @@ Sensitive information such as passwords, full JWT tokens, and database credentia
 
 ## 9. Health Check
 
-**Endpoint:** `GET http://localhost:3000/health`
+**Local URL:** `GET http://localhost:3000/health`
+
+**Deployed URL:** `GET https://101507439-comp-3123-assignment1-4fk.vercel.app/health`
 
 **Expected Status:** `200 OK`
 
