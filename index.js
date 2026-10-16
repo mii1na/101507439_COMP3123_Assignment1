@@ -2,6 +2,7 @@ require("dotenv").config();
 
 const express = require("express");
 const helmet = require("helmet");
+const mongoose = require("mongoose");
 const connectDB = require("./config/db");
 
 const userRoutes = require("./routes/userRoutes");
@@ -28,10 +29,6 @@ app.use(requestLogger);
 // Parse JSON requests
 app.use(express.json());
 
-// API routes
-app.use("/api/v1/user", userRoutes);
-app.use("/api/v1/emp", employeeRoutes);
-
 // Health check
 app.get("/health", (req, res) => {
     res.status(200).json({
@@ -40,16 +37,42 @@ app.get("/health", (req, res) => {
     });
 });
 
+// Make sure MongoDB is connected before API requests
+app.use(async (req, res, next) => {
+    try {
+        if (mongoose.connection.readyState !== 1) {
+            await connectDB();
+        }
+        next();
+    } catch (error) {
+        next(error);
+    }
+});
+
+// API routes
+app.use("/api/v1/user", userRoutes);
+app.use("/api/v1/emp", employeeRoutes);
+
 // Error handling
 app.use(notFound);
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 3000;
 
-// Connect to MongoDB and start server
-connectDB().then(() => {
-    app.listen(PORT, () => {
-        console.log(`Server running on port ${PORT}`);
-        logEvent(`Server started on port ${PORT}`);
-    });
-});
+// Start the server locally
+if (process.env.VERCEL !== "1") {
+    connectDB()
+        .then(() => {
+            app.listen(PORT, () => {
+                console.log(`Server running on port ${PORT}`);
+                logEvent(`Server started on port ${PORT}`);
+            });
+        })
+        .catch((error) => {
+            console.error("Server startup failed:", error.message);
+            process.exitCode = 1;
+        });
+}
+
+// Export Express app for Vercel
+module.exports = app;
